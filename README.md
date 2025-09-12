@@ -1,4 +1,4 @@
-# Decentralized Photo Sharing Application
+# ARKIVE - Decentralized Photo Sharing Application
 
 A backend service built with Go that enables users to upload and share photos. The unique aspect of this project is that it leverages the InterPlanetary File System (IPFS) for decentralized file storage, moving away from traditional cloud-based solutions.
 
@@ -23,7 +23,7 @@ This project showcases core backend development skills including:
 
 1.  Clone this repository:
     ```bash
-    git clone [https://github.com/meliocool/arkive.git](https://github.com/meliocool/arkive.git)
+    git clone https://github.com/meliocool/arkive.git
     cd arkive
     ```
 
