@@ -1,0 +1,70 @@
+package helper
+
+import (
+	"encoding/json"
+	"errors"
+	"net/http"
+)
+
+type WebResponse struct {
+	Code   int         `json:"code"`
+	Status string      `json:"status"`
+	Data   interface{} `json:"data"`
+}
+
+var ErrBadRequest = errors.New("invalid request")
+var ErrTooLarge = errors.New("payload too large")
+var ErrNotFound = errors.New("resource not found")
+var ErrInvalidInput = errors.New("invalid input")
+var ErrInternal = errors.New("internal server error")
+var ErrUnsupportedMediaType = errors.New("unsupported media type")
+
+func WriteErr(w http.ResponseWriter, err error) {
+	w.Header().Set("Content-Type", "application/json")
+	if errors.Is(err, ErrBadRequest) {
+		w.WriteHeader(http.StatusBadRequest)
+		encoder := json.NewEncoder(w)
+		webResponse := WebResponse{
+			Code:   http.StatusBadRequest,
+			Status: "Bad Request!",
+			Data:   err.Error(),
+		}
+		encoder.Encode(webResponse)
+	} else if errors.Is(err, ErrTooLarge) {
+		w.WriteHeader(http.StatusRequestEntityTooLarge)
+		encoder := json.NewEncoder(w)
+		webResponse := WebResponse{
+			Code:   http.StatusRequestEntityTooLarge,
+			Status: "Payload Too Large!",
+			Data:   err.Error(),
+		}
+		encoder.Encode(webResponse)
+	} else if errors.Is(err, ErrNotFound) {
+		w.WriteHeader(http.StatusNotFound)
+		encoder := json.NewEncoder(w)
+		webResponse := WebResponse{
+			Code:   http.StatusNotFound,
+			Status: "Resource Not Found!",
+			Data:   err.Error(),
+		}
+		encoder.Encode(webResponse)
+	} else if errors.Is(err, ErrUnsupportedMediaType) {
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+		encoder := json.NewEncoder(w)
+		webResponse := WebResponse{
+			Code:   http.StatusUnsupportedMediaType,
+			Status: "Unsupported Media Type!",
+			Data:   err.Error(),
+		}
+		encoder.Encode(webResponse)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		encoder := json.NewEncoder(w)
+		webResponse := WebResponse{
+			Code:   http.StatusInternalServerError,
+			Status: "Internal Server Error!",
+			Data:   err.Error(),
+		}
+		encoder.Encode(webResponse)
+	}
+}

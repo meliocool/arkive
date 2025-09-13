@@ -17,6 +17,8 @@ FROM alpine AS final
 
 WORKDIR /app
 
+COPY .env .
+
 COPY --from=build /app/app /app/app
 
 RUN chmod +x /app/app
