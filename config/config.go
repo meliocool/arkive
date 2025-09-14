@@ -7,7 +7,8 @@ import (
 )
 
 type Config struct {
-	DBUser, DBPassword, DBName, DBHost string
+	DBUser, DBPassword, DBName, DBHost                          string
+	ZohoUser, ZohoPassword, ZohoHost, ZohoServiceName, ZohoPort string
 }
 
 func LoadConfig() (*Config, error) {
@@ -21,7 +22,16 @@ func LoadConfig() (*Config, error) {
 	DBHost := os.Getenv("POSTGRES_HOST")
 
 	if DBUser == "" || DBPassword == "" || DBName == "" || DBHost == "" {
-		return nil, fmt.Errorf("missing one or more required env vars")
+		return nil, fmt.Errorf("missing one or more required DB env vars")
+	}
+
+	ZohoUser := os.Getenv("EMAIL_SMTP_USER")
+	ZohoPassword := os.Getenv("EMAIL_SMTP_PASS")
+	ZohoHost := os.Getenv("EMAIL_SMTP_HOST")
+	ZohoPort := os.Getenv("EMAIL_SMTP_PORT")
+
+	if ZohoUser == "" || ZohoPassword == "" || ZohoHost == "" || ZohoPort == "" {
+		return nil, fmt.Errorf("missing one or more required Email SMTP env vars")
 	}
 
 	cfg := &Config{
@@ -29,6 +39,11 @@ func LoadConfig() (*Config, error) {
 		DBPassword: DBPassword,
 		DBName:     DBName,
 		DBHost:     DBHost,
+
+		ZohoUser:     ZohoUser,
+		ZohoPassword: ZohoPassword,
+		ZohoHost:     ZohoHost,
+		ZohoPort:     ZohoPort,
 	}
 
 	return cfg, nil

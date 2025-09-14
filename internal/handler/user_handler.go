@@ -20,6 +20,11 @@ type RegisterRequest struct {
 	ConfirmPassword string `json:"confirmPassword"`
 }
 
+type VerifyRequest struct {
+	Email            string `json:"email"`
+	VerificationCode string `json:"verificationCode"`
+}
+
 func NewUserHandler(registrationService *service.RegistrationService) *UserHandler {
 	return &UserHandler{RegistrationService: *registrationService}
 }
@@ -41,4 +46,24 @@ func (userHandler *UserHandler) RegisterUser(writer http.ResponseWriter, request
 		return
 	}
 	helper.WriteToResponseBody(writer, user)
+}
+
+func (UserHandler *UserHandler) VerifyUser(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	decoder := json.NewDecoder(request.Body)
+	reqBody := VerifyRequest{}
+	if err := decoder.Decode(&reqBody); err != nil {
+		helper.WriteErr(writer, helper.ErrInvalidInput)
+		return
+	}
+	if reqBody.Email == "" || reqBody.VerificationCode == "" {
+		helper.WriteErr(writer, helper.ErrInvalidInput)
+		return
+	}
+
+	verifyErr := UserHandler.RegistrationService.VerifyUser(context.Background(), reqBody.Email, reqBody.VerificationCode)
+	if verifyErr != nil {
+		helper.WriteErr(writer, helper.ErrInternal)
+		return
+	}
+	helper.WriteToResponseBody(writer, "User Verified Successfully!")
 }

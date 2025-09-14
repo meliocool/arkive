@@ -30,7 +30,8 @@ func main() {
 	defer db.Close()
 
 	userRepository := postgresql.NewUserRepo(db)
-	registrationService := service.NewRegistrationService(userRepository)
+	emailService := service.NewEmailService(cfg.ZohoUser, cfg.ZohoPassword, cfg.ZohoHost, cfg.ZohoPort)
+	registrationService := service.NewRegistrationService(userRepository, emailService)
 	userHandler := handler.NewUserHandler(registrationService)
 
 	router := httprouter.New()
@@ -38,6 +39,7 @@ func main() {
 		fmt.Fprint(writer, "Server is Up and Running!")
 	})
 	router.POST("/users/register", userHandler.RegisterUser)
+	router.POST("/users/verify", userHandler.VerifyUser)
 
 	server := http.Server{
 		Addr:    ":8080",
