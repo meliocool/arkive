@@ -18,6 +18,7 @@ var ErrNotFound = errors.New("resource not found")
 var ErrInvalidInput = errors.New("invalid input")
 var ErrInternal = errors.New("internal server error")
 var ErrUnsupportedMediaType = errors.New("unsupported media type")
+var ErrUnauthorized = errors.New("not authorized")
 
 func WriteErr(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json")
@@ -54,6 +55,15 @@ func WriteErr(w http.ResponseWriter, err error) {
 		webResponse := WebResponse{
 			Code:   http.StatusUnsupportedMediaType,
 			Status: "Unsupported Media Type!",
+			Data:   err.Error(),
+		}
+		encoder.Encode(webResponse)
+	} else if errors.Is(err, ErrUnauthorized) {
+		w.WriteHeader(http.StatusUnauthorized)
+		encoder := json.NewEncoder(w)
+		webResponse := WebResponse{
+			Code:   http.StatusUnauthorized,
+			Status: "Unauthorized!",
 			Data:   err.Error(),
 		}
 		encoder.Encode(webResponse)

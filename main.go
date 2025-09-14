@@ -31,8 +31,9 @@ func main() {
 
 	userRepository := postgresql.NewUserRepo(db)
 	emailService := service.NewEmailService(cfg.ZohoUser, cfg.ZohoPassword, cfg.ZohoHost, cfg.ZohoPort)
-	registrationService := service.NewRegistrationService(userRepository, emailService)
-	userHandler := handler.NewUserHandler(registrationService)
+	loginService := service.NewLoginService(userRepository, cfg.JwtSecret)
+	registrationService := service.NewRegistrationService(userRepository, emailService, cfg.JwtSecret)
+	userHandler := handler.NewUserHandler(registrationService, loginService)
 
 	router := httprouter.New()
 	router.GET("/health", func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
@@ -40,6 +41,7 @@ func main() {
 	})
 	router.POST("/users/register", userHandler.RegisterUser)
 	router.POST("/users/verify", userHandler.VerifyUser)
+	router.POST("/users/login", userHandler.LoginUser)
 
 	server := http.Server{
 		Addr:    ":8080",

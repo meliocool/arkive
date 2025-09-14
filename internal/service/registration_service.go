@@ -3,36 +3,53 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/meliocool/arkive/internal/helper"
 	"github.com/meliocool/arkive/internal/repository/users"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	"time"
 )
 
 type RegistrationService struct {
 	UserRepository users.UserRepository
 	EmailService   *EmailService
+	JwtSecret      string
 }
 
-func NewRegistrationService(userRepository users.UserRepository, emailService *EmailService) *RegistrationService {
-	return &RegistrationService{UserRepository: userRepository, EmailService: emailService}
+func NewRegistrationService(userRepository users.UserRepository, emailService *EmailService, jwtSecret string) *RegistrationService {
+	return &RegistrationService{UserRepository: userRepository, EmailService: emailService, JwtSecret: jwtSecret}
 }
 
-func (rs *RegistrationService) VerifyUser(ctx context.Context, email string, verificationCode string) error {
+func (rs *RegistrationService) VerifyUser(ctx context.Context, email string, verificationCode string) (*users.User, string, error) {
 	user, findErr := rs.UserRepository.FindByEmail(ctx, email)
 	if findErr != nil {
-		return findErr
+		return nil, "", findErr
 	}
 
 	if user.VerificationCode != verificationCode {
-		return fmt.Errorf("invalid verification code")
+		return nil, "", fmt.Errorf("invalid verification code")
 	}
 
 	verifErr := rs.UserRepository.UpdateIsVerified(ctx, user.ID, user.IsVerified)
 	if verifErr != nil {
-		return verifErr
+		return nil, "", verifErr
 	}
-	return nil
+
+	claims := &jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		Subject:   user.ID.String(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, tokenErr := token.SignedString([]byte(rs.JwtSecret))
+	if tokenErr != nil {
+		return nil, "", fmt.Errorf("token failed to generated")
+	}
+
+	return user, signedToken, nil
 }
 
 func (rs *RegistrationService) Register(ctx context.Context, username string, email string, password string) (*users.User, error) {

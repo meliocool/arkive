@@ -9,6 +9,7 @@ import (
 type Config struct {
 	DBUser, DBPassword, DBName, DBHost                          string
 	ZohoUser, ZohoPassword, ZohoHost, ZohoServiceName, ZohoPort string
+	JwtSecret                                                   string
 }
 
 func LoadConfig() (*Config, error) {
@@ -34,6 +35,8 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("missing one or more required Email SMTP env vars")
 	}
 
+	JwtSecret := os.Getenv("JWT_SECRET")
+
 	cfg := &Config{
 		DBUser:     DBUser,
 		DBPassword: DBPassword,
@@ -44,6 +47,8 @@ func LoadConfig() (*Config, error) {
 		ZohoPassword: ZohoPassword,
 		ZohoHost:     ZohoHost,
 		ZohoPort:     ZohoPort,
+
+		JwtSecret: JwtSecret,
 	}
 
 	return cfg, nil
