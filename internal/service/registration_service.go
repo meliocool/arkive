@@ -37,7 +37,7 @@ func (rs *RegistrationService) VerifyUser(ctx context.Context, email string, ver
 	}
 
 	claims := &jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		Subject:   user.ID.String(),
 	}

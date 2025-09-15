@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/julienschmidt/httprouter"
 	"github.com/meliocool/arkive/internal/helper"
 	"log"
 	"net/http"
@@ -20,8 +21,8 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func AuthMiddleware(next http.Handler, jwtSecret string) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+func AuthMiddleware(next httprouter.Handle, jwtSecret string) httprouter.Handle {
+	return func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 		authHeader := strings.TrimSpace(request.Header.Get("Authorization"))
 		if authHeader == "" {
 			helper.WriteErr(writer, helper.ErrUnauthorized)
@@ -56,7 +57,8 @@ func AuthMiddleware(next http.Handler, jwtSecret string) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(request.Context(), ContextKeyUserID, claims.UserID)
-		next.ServeHTTP(writer, request.WithContext(ctx))
-	})
+		ctx := context.WithValue(request.Context(), ContextKeyUserID, claims.Subject)
+
+		next(writer, request.WithContext(ctx), params)
+	}
 }

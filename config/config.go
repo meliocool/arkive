@@ -10,6 +10,7 @@ type Config struct {
 	DBUser, DBPassword, DBName, DBHost                          string
 	ZohoUser, ZohoPassword, ZohoHost, ZohoServiceName, ZohoPort string
 	JwtSecret                                                   string
+	IPFSAPIKey, IPFSAPISecret                                   string
 }
 
 func LoadConfig() (*Config, error) {
@@ -37,6 +38,13 @@ func LoadConfig() (*Config, error) {
 
 	JwtSecret := os.Getenv("JWT_SECRET")
 
+	IPFSAPIKey := os.Getenv("IPFS_API_KEY")
+	IPFSAPISecret := os.Getenv("IPFS_API_SECRET")
+
+	if IPFSAPIKey == "" || IPFSAPISecret == "" {
+		return nil, fmt.Errorf("missing one or more required IPFS env vars")
+	}
+
 	cfg := &Config{
 		DBUser:     DBUser,
 		DBPassword: DBPassword,
@@ -49,6 +57,9 @@ func LoadConfig() (*Config, error) {
 		ZohoPort:     ZohoPort,
 
 		JwtSecret: JwtSecret,
+
+		IPFSAPIKey:    IPFSAPIKey,
+		IPFSAPISecret: IPFSAPISecret,
 	}
 
 	return cfg, nil
