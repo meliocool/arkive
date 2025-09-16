@@ -57,7 +57,7 @@ func NewUserHandler(registrationService *service.RegistrationService, loginServi
 	return &UserHandler{RegistrationService: *registrationService, LoginService: *loginService}
 }
 
-func (UserHandler *UserHandler) RegisterUser(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+func (uh *UserHandler) RegisterUser(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	decoder := json.NewDecoder(request.Body)
 	reqBody := RegisterRequest{}
 	if err := decoder.Decode(&reqBody); err != nil {
@@ -68,7 +68,7 @@ func (UserHandler *UserHandler) RegisterUser(writer http.ResponseWriter, request
 		helper.WriteErr(writer, helper.ErrInvalidInput)
 		return
 	}
-	user, regErr := UserHandler.RegistrationService.Register(context.Background(), reqBody.Username, reqBody.Email, reqBody.Password)
+	user, regErr := uh.RegistrationService.Register(context.Background(), reqBody.Username, reqBody.Email, reqBody.Password)
 	if regErr != nil {
 		helper.WriteErr(writer, helper.ErrInternal)
 		return
@@ -91,7 +91,7 @@ func (UserHandler *UserHandler) RegisterUser(writer http.ResponseWriter, request
 	}
 }
 
-func (UserHandler *UserHandler) VerifyUser(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+func (uh *UserHandler) VerifyUser(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	decoder := json.NewDecoder(request.Body)
 	reqBody := VerifyRequest{}
 	if err := decoder.Decode(&reqBody); err != nil {
@@ -103,7 +103,7 @@ func (UserHandler *UserHandler) VerifyUser(writer http.ResponseWriter, request *
 		return
 	}
 
-	user, token, verifyErr := UserHandler.RegistrationService.VerifyUser(context.Background(), reqBody.Email, reqBody.VerificationCode)
+	user, token, verifyErr := uh.RegistrationService.VerifyUser(context.Background(), reqBody.Email, reqBody.VerificationCode)
 	if verifyErr != nil {
 		helper.WriteErr(writer, helper.ErrInternal)
 		return
@@ -128,7 +128,7 @@ func (UserHandler *UserHandler) VerifyUser(writer http.ResponseWriter, request *
 	}
 }
 
-func (UserHandler *UserHandler) LoginUser(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+func (uh *UserHandler) LoginUser(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 	decoder := json.NewDecoder(request.Body)
 	reqBody := LoginRequest{}
 	if err := decoder.Decode(&reqBody); err != nil {
@@ -140,7 +140,7 @@ func (UserHandler *UserHandler) LoginUser(writer http.ResponseWriter, request *h
 		return
 	}
 
-	token, loginErr := UserHandler.LoginService.Login(context.Background(), reqBody.Email, reqBody.Password)
+	token, loginErr := uh.LoginService.Login(context.Background(), reqBody.Email, reqBody.Password)
 	if loginErr != nil {
 		if errors.Is(loginErr, helper.ErrUnauthorized) {
 			helper.WriteErr(writer, helper.ErrUnauthorized)

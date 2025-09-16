@@ -16,7 +16,7 @@ func NewPhotoRepo(pool *pgxpool.Pool) *PhotoRepo {
 	return &PhotoRepo{db: pool}
 }
 
-func (p PhotoRepo) Create(ctx context.Context, photo *photos.Photo) (*photos.Photo, error) {
+func (p *PhotoRepo) Create(ctx context.Context, photo *photos.Photo) (*photos.Photo, error) {
 	SQL := `INSERT INTO photos (ipfs_cid, filename, user_id)
 			VALUES ($1, $2, $3) RETURNING *`
 
@@ -37,7 +37,7 @@ func (p PhotoRepo) Create(ctx context.Context, photo *photos.Photo) (*photos.Pho
 	return &newPhoto, nil
 }
 
-func (p PhotoRepo) FindByUserID(ctx context.Context, userID uuid.UUID) ([]*photos.Photo, error) {
+func (p *PhotoRepo) FindByUserID(ctx context.Context, userID uuid.UUID) ([]*photos.Photo, error) {
 	SQL := `SELECT * FROM photos WHERE user_id = $1`
 
 	rows, queryErr := p.db.Query(ctx, SQL, userID)
@@ -63,7 +63,7 @@ func (p PhotoRepo) FindByUserID(ctx context.Context, userID uuid.UUID) ([]*photo
 	return Photos, nil
 }
 
-func (p PhotoRepo) Delete(ctx context.Context, photoID uuid.UUID) error {
+func (p *PhotoRepo) Delete(ctx context.Context, photoID uuid.UUID) error {
 	SQL := `DELETE FROM photos WHERE id = $1`
 	cmd, execErr := p.db.Exec(ctx, SQL, photoID)
 	if execErr != nil {
@@ -75,4 +75,30 @@ func (p PhotoRepo) Delete(ctx context.Context, photoID uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (p *PhotoRepo) FindAll(ctx context.Context) ([]*photos.Photo, error) {
+	SQL := `SELECT * FROM photos`
+
+	rows, queryErr := p.db.Query(ctx, SQL)
+	if queryErr != nil {
+		return nil, fmt.Errorf("failed to find all photos: %w", queryErr)
+	}
+	defer rows.Close()
+
+	var Photos []*photos.Photo
+
+	for rows.Next() {
+		var photo photos.Photo
+		scanErr := rows.Scan(&photo.ID, &photo.IPFSCid, &photo.Filename, &photo.CreatedAt, &photo.UpdatedAt, &photo.UserID)
+		if scanErr != nil {
+			return nil, fmt.Errorf("failed to retrieve rows: %w", scanErr)
+		}
+		Photos = append(Photos, &photo)
+	}
+
+	if rowErr := rows.Err(); rowErr != nil {
+		return nil, rowErr
+	}
+	return Photos, nil
 }

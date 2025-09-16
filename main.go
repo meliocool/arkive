@@ -45,6 +45,8 @@ func main() {
 	ipfsService := service.NewIpfsService(cfg.IPFSAPIKey, cfg.IPFSAPISecret)
 	photoService := service.NewPhotoService(photoRepository, userRepository, *ipfsService)
 	photoHandler := handler.NewPhotoHandler(*photoService)
+	publicService := service.NewPublicService(photoRepository, userRepository)
+	publicHandler := handler.NewPublicHandler(publicService)
 
 	router := httprouter.New()
 	router.GET("/health", func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
@@ -56,7 +58,9 @@ func main() {
 	router.POST("/photos", middleware.AuthMiddleware(photoHandler.UploadPhoto, cfg.JwtSecret))
 	router.GET("/photos", middleware.AuthMiddleware(photoHandler.ListPhotos, cfg.JwtSecret))
 	router.DELETE("/photos/:photoId", middleware.AuthMiddleware(photoHandler.DeletePhoto, cfg.JwtSecret))
-	router.POST("/photos/:photoId", middleware.AuthMiddleware(photoHandler.SetProfilePicture, cfg.JwtSecret))
+	router.POST("/photos/:photoId/profile", middleware.AuthMiddleware(photoHandler.SetProfilePicture, cfg.JwtSecret))
+	router.GET("/public/photos", publicHandler.ListAllPublicPhotos)
+	router.GET("/users/:userId", publicHandler.ViewUserProfile)
 
 	server := http.Server{
 		Addr:    ":8080",

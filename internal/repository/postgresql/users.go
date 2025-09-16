@@ -84,6 +84,38 @@ func (u UserRepo) FindByEmail(ctx context.Context, email string) (*users.User, e
 	return &userFound, nil
 }
 
+func (u UserRepo) FindByID(ctx context.Context, userId uuid.UUID) (*users.User, error) {
+	if userId == uuid.Nil {
+		return nil, fmt.Errorf("invalid email")
+	}
+
+	SQL := "SELECT * FROM users WHERE id = $1"
+
+	var userFound users.User
+
+	err := u.db.QueryRow(
+		ctx,
+		SQL,
+		userId,
+	).Scan(
+		&userFound.ID,
+		&userFound.Username,
+		&userFound.Email,
+		&userFound.PasswordHash,
+		&userFound.IsVerified,
+		&userFound.VerificationCode,
+		&userFound.CreatedAt,
+		&userFound.UpdatedAt,
+		&userFound.ProfileImageCID,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	return &userFound, nil
+}
+
 func (u *UserRepo) UpdateIsVerified(ctx context.Context, id uuid.UUID, isVerified bool) error {
 	if isVerified == true {
 		return fmt.Errorf("account already verified")
