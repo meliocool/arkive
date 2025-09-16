@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/meliocool/arkive/internal/helper"
@@ -74,4 +75,45 @@ func (ph *PhotoHandler) ListPhotos(writer http.ResponseWriter, request *http.Req
 		return
 	}
 	helper.WriteToResponseBody(writer, photos)
+}
+
+func (ph *PhotoHandler) DeletePhoto(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	photoId := params.ByName("photoId")
+	ctx := request.Context()
+
+	userID, ok := ctx.Value(middleware.ContextKeyUserID).(string)
+	if !ok {
+		helper.WriteErr(writer, helper.ErrUnauthorized)
+		return
+	}
+
+	userUUID, userUUIDErr := uuid.Parse(userID)
+	if userUUIDErr != nil {
+		helper.WriteErr(writer, helper.ErrUnauthorized)
+		return
+	}
+
+	photoUUID, photoIdErr := uuid.Parse(photoId)
+	if photoIdErr != nil {
+		helper.WriteErr(writer, helper.ErrUnauthorized)
+		return
+	}
+
+	deleteErr := ph.PhotoService.DeletePhoto(ctx, userUUID, photoUUID)
+	if deleteErr != nil {
+		helper.WriteErr(writer, helper.ErrInternal)
+		return
+	}
+
+	writer.Header().Add("Content-Type", "application/json")
+
+	response := helper.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   "Photo Deleted Successfully!",
+	}
+	if err := json.NewEncoder(writer).Encode(response); err != nil {
+		helper.WriteErr(writer, helper.ErrInternal)
+		return
+	}
 }

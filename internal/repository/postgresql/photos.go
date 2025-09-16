@@ -62,3 +62,17 @@ func (p PhotoRepo) FindByUserID(ctx context.Context, userID uuid.UUID) ([]*photo
 	}
 	return Photos, nil
 }
+
+func (p PhotoRepo) Delete(ctx context.Context, photoID uuid.UUID) error {
+	SQL := `DELETE FROM photos WHERE id = $1`
+	cmd, execErr := p.db.Exec(ctx, SQL, photoID)
+	if execErr != nil {
+		return execErr
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("photo does not exist")
+	}
+
+	return nil
+}

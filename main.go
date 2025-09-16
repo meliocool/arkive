@@ -55,6 +55,7 @@ func main() {
 	router.POST("/users/login", userHandler.LoginUser)
 	router.POST("/photos", middleware.AuthMiddleware(photoHandler.UploadPhoto, cfg.JwtSecret))
 	router.GET("/photos", middleware.AuthMiddleware(photoHandler.ListPhotos, cfg.JwtSecret))
+	router.DELETE("/photos/:photoId", middleware.AuthMiddleware(photoHandler.DeletePhoto, cfg.JwtSecret))
 
 	server := http.Server{
 		Addr:    ":8080",

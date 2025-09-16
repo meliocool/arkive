@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
+	"github.com/meliocool/arkive/internal/helper"
 	"github.com/meliocool/arkive/internal/repository/photos"
 	"io"
 )
@@ -42,4 +44,32 @@ func (ps *PhotoService) ListPhotos(ctx context.Context, userID uuid.UUID) ([]*ph
 		return nil, findErr
 	}
 	return photoList, nil
+}
+
+func (ps *PhotoService) DeletePhoto(ctx context.Context, userID uuid.UUID, photoID uuid.UUID) error {
+	allPhotos, getAllPhotosErr := ps.PhotoRepository.FindByUserID(ctx, userID)
+	if getAllPhotosErr != nil {
+		return fmt.Errorf("could not find all photos owned by this user: %w", getAllPhotosErr)
+	}
+	var ipfsCID string
+	found := false
+	for i := range allPhotos {
+		if allPhotos[i].ID == photoID {
+			ipfsCID = allPhotos[i].IPFSCid
+			found = true
+			break
+		}
+	}
+	if !found {
+		return helper.ErrNotFound
+	}
+
+	if unpinErr := ps.IpfsService.UnpinFile(ctx, ipfsCID); unpinErr != nil {
+		return fmt.Errorf("unpin ipfs cid %s: %w", ipfsCID, unpinErr)
+	}
+
+	if deleteErr := ps.PhotoRepository.Delete(ctx, photoID); deleteErr != nil {
+		return fmt.Errorf("delete photo record failed: %w", deleteErr)
+	}
+	return nil
 }

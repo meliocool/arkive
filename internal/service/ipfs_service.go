@@ -71,3 +71,28 @@ func (is *IpfsService) UploadFile(ctx context.Context, fileName string, file io.
 
 	return respStruct.IpfsHash, nil
 }
+
+func (is *IpfsService) UnpinFile(ctx context.Context, ipfsCID string) error {
+	url := "https://api.pinata.cloud/pinning/unpin/" + ipfsCID
+	req, reqErr := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if reqErr != nil {
+		return fmt.Errorf("pinata unpin failed: %w", reqErr)
+	}
+
+	req.Header.Set("pinata_api_key", is.APIKey)
+	req.Header.Set("pinata_secret_api_key", is.APISecret)
+
+	client := &http.Client{}
+	res, resErr := client.Do(req)
+	if resErr != nil {
+		return fmt.Errorf("failed to create a unpin request: %w", resErr)
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(res.Body)
+		return fmt.Errorf("failed to unpin: %s", string(bodyBytes))
+	}
+	return nil
+}

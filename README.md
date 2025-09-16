@@ -1,6 +1,6 @@
 # ARKIVE - Decentralized Photo Sharing Application
 
-A backend service built with Go that enables users to upload and share photos. The unique aspect of this project is that it leverages the InterPlanetary File System (IPFS) for decentralized file storage, moving away from traditional cloud-based solutions.
+A backend service built with Go that enables users to upload and share allPhotos. The unique aspect of this project is that it leverages the InterPlanetary File System (IPFS) for decentralized file storage, moving away from traditional cloud-based solutions.
 
 This project showcases core backend development skills including:
 * **RESTful API Design:** Building clear and well-structured API endpoints.
@@ -47,8 +47,8 @@ This project showcases core backend development skills including:
 | `/health`                 | `GET`  | A simple health check to ensure the server is running.                      |
 | `/users/register`         | `POST` | Registers a new user with a username and password.                          |
 | `/users/login`            | `POST` | Authenticates a user and returns a JWT.                                     |
-| `/photos`                 | `POST` | Uploads a photo to IPFS and saves its metadata to the database. (Protected) |
-| `/photos`                 | `GET`  | Lists all photos uploaded by the authenticated user. (Protected)            |
+| `/allPhotos`                 | `POST` | Uploads a photo to IPFS and saves its metadata to the database. (Protected) |
+| `/allPhotos`                 | `GET`  | Lists all allPhotos uploaded by the authenticated user. (Protected)            |
 
 ---
 
