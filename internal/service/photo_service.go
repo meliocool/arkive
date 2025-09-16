@@ -6,17 +6,20 @@ import (
 	"github.com/google/uuid"
 	"github.com/meliocool/arkive/internal/helper"
 	"github.com/meliocool/arkive/internal/repository/photos"
+	"github.com/meliocool/arkive/internal/repository/users"
 	"io"
 )
 
 type PhotoService struct {
 	PhotoRepository photos.PhotoRepository
+	UserRepository  users.UserRepository
 	IpfsService     IpfsService
 }
 
-func NewPhotoService(photoRepository photos.PhotoRepository, ipfsService IpfsService) *PhotoService {
+func NewPhotoService(photoRepository photos.PhotoRepository, userRepository users.UserRepository, ipfsService IpfsService) *PhotoService {
 	return &PhotoService{
 		PhotoRepository: photoRepository,
+		UserRepository:  userRepository,
 		IpfsService:     ipfsService,
 	}
 }
@@ -70,6 +73,33 @@ func (ps *PhotoService) DeletePhoto(ctx context.Context, userID uuid.UUID, photo
 
 	if deleteErr := ps.PhotoRepository.Delete(ctx, photoID); deleteErr != nil {
 		return fmt.Errorf("delete photo record failed: %w", deleteErr)
+	}
+	return nil
+}
+
+func (ps *PhotoService) SetProfilePictureCID(ctx context.Context, userID uuid.UUID, photoID uuid.UUID) error {
+	allPhotos, getAllPhotosErr := ps.PhotoRepository.FindByUserID(ctx, userID)
+	if getAllPhotosErr != nil {
+		return fmt.Errorf("could not find all photos owned by this user: %w", getAllPhotosErr)
+	}
+	var ipfsCID string
+	found := false
+	for i := range allPhotos {
+		if allPhotos[i].ID == photoID {
+			if allPhotos[i].UserID != userID {
+				return helper.ErrUnauthorized
+			}
+			ipfsCID = allPhotos[i].IPFSCid
+			found = true
+			break
+		}
+	}
+	if !found {
+		return helper.ErrNotFound
+	}
+	updateErr := ps.UserRepository.UpdateProfileImage(ctx, userID, ipfsCID)
+	if updateErr != nil {
+		return fmt.Errorf("failure in updating profile picture: %w", updateErr)
 	}
 	return nil
 }

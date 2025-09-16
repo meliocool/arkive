@@ -117,3 +117,44 @@ func (ph *PhotoHandler) DeletePhoto(writer http.ResponseWriter, request *http.Re
 		return
 	}
 }
+
+func (ph *PhotoHandler) SetProfilePicture(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+	photoId := params.ByName("photoId")
+	ctx := request.Context()
+
+	userID, ok := ctx.Value(middleware.ContextKeyUserID).(string)
+	if !ok {
+		helper.WriteErr(writer, helper.ErrUnauthorized)
+		return
+	}
+
+	userUUID, userUUIDErr := uuid.Parse(userID)
+	if userUUIDErr != nil {
+		helper.WriteErr(writer, helper.ErrUnauthorized)
+		return
+	}
+
+	photoUUID, photoIdErr := uuid.Parse(photoId)
+	if photoIdErr != nil {
+		helper.WriteErr(writer, helper.ErrUnauthorized)
+		return
+	}
+
+	updateErr := ph.PhotoService.SetProfilePictureCID(ctx, userUUID, photoUUID)
+	if updateErr != nil {
+		helper.WriteErr(writer, helper.ErrInternal)
+		return
+	}
+
+	writer.Header().Add("Content-Type", "application/json")
+
+	response := helper.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data:   "Profile Photo Set!",
+	}
+	if err := json.NewEncoder(writer).Encode(response); err != nil {
+		helper.WriteErr(writer, helper.ErrInternal)
+		return
+	}
+}

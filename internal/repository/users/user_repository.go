@@ -22,4 +22,5 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	UpdateIsVerified(ctx context.Context, id uuid.UUID, isVerified bool) error
+	UpdateProfileImage(ctx context.Context, userID uuid.UUID, ipfsCID string) error
 }

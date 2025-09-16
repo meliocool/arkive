@@ -105,3 +105,17 @@ func (u *UserRepo) UpdateIsVerified(ctx context.Context, id uuid.UUID, isVerifie
 	}
 	return nil
 }
+
+func (u *UserRepo) UpdateProfileImage(ctx context.Context, userID uuid.UUID, ipfsCID string) error {
+	SQL := `UPDATE users SET profile_image_cid = $1 WHERE id = $2`
+	cmd, execErr := u.db.Exec(ctx, SQL, ipfsCID, userID)
+	if execErr != nil {
+		return execErr
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("user does not exist")
+	}
+
+	return nil
+}

@@ -43,7 +43,7 @@ func main() {
 	userHandler := handler.NewUserHandler(registrationService, loginService)
 	photoRepository := postgresql.NewPhotoRepo(db)
 	ipfsService := service.NewIpfsService(cfg.IPFSAPIKey, cfg.IPFSAPISecret)
-	photoService := service.NewPhotoService(photoRepository, *ipfsService)
+	photoService := service.NewPhotoService(photoRepository, userRepository, *ipfsService)
 	photoHandler := handler.NewPhotoHandler(*photoService)
 
 	router := httprouter.New()
@@ -56,6 +56,7 @@ func main() {
 	router.POST("/photos", middleware.AuthMiddleware(photoHandler.UploadPhoto, cfg.JwtSecret))
 	router.GET("/photos", middleware.AuthMiddleware(photoHandler.ListPhotos, cfg.JwtSecret))
 	router.DELETE("/photos/:photoId", middleware.AuthMiddleware(photoHandler.DeletePhoto, cfg.JwtSecret))
+	router.POST("/photos/:photoId", middleware.AuthMiddleware(photoHandler.SetProfilePicture, cfg.JwtSecret))
 
 	server := http.Server{
 		Addr:    ":8080",
