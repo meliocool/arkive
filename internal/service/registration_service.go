@@ -31,7 +31,7 @@ func (rs *RegistrationService) VerifyUser(ctx context.Context, email string, ver
 		return nil, "", fmt.Errorf("invalid verification code")
 	}
 
-	verifErr := rs.UserRepository.UpdateIsVerified(ctx, user.ID, true)
+	verifErr := rs.UserRepository.UpdateIsVerified(ctx, user.ID, user.IsVerified)
 	if verifErr != nil {
 		return nil, "", verifErr
 	}
