@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net"
+	"net/http"
 	"net/smtp"
+	"os"
 	"time"
 )
 
@@ -27,6 +30,24 @@ func NewEmailService(email, password, host, port string) *EmailService {
 		Host:     host,
 		Port:     port,
 	}
+}
+
+func (e *EmailService) renderVerificationHTML(toEmail, username, verificationCode string, registrationDate time.Time) (string, error) {
+	tmpl, err := template.ParseFiles("/app/templates/verification_email.html")
+	if err != nil {
+		return "", err
+	}
+	data := VerificationEmailData{
+		Username:         username,
+		Email:            toEmail,
+		VerificationCode: verificationCode,
+		RegistrationDate: registrationDate,
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 func (e *EmailService) buildVerificationMessage(toEmail, username, verificationCode string, registrationDate time.Time) ([]byte, error) {
@@ -49,7 +70,6 @@ func (e *EmailService) buildVerificationMessage(toEmail, username, verificationC
 		username, verificationCode, registrationDate.Format(time.RFC1123))
 
 	boundary := "BOUNDARY-7e1f2c3"
-
 	headers := ""
 	headers += fmt.Sprintf("From: %s\r\n", e.Email)
 	headers += fmt.Sprintf("To: %s\r\n", toEmail)
@@ -75,6 +95,43 @@ func (e *EmailService) buildVerificationMessage(toEmail, username, verificationC
 }
 
 func (e *EmailService) SendVerificationEmailCtx(ctx context.Context, toEmail, username, verificationCode string, registrationDate time.Time) error {
+	// If EMAIL_TRANSPORT=sendgrid -> use HTTPS (port 443). If not then fallback to SMTP (your original code).
+	if os.Getenv("EMAIL_TRANSPORT") == "sendgrid" {
+		html, err := e.renderVerificationHTML(toEmail, username, verificationCode, registrationDate)
+		if err != nil {
+			return err
+		}
+
+		payload := map[string]any{
+			"personalizations": []map[string]any{{
+				"to": []map[string]string{{"email": toEmail, "name": username}},
+			}},
+			"from":    map[string]string{"email": os.Getenv("FROM_EMAIL"), "name": os.Getenv("FROM_NAME")},
+			"subject": "Your Verification Code",
+			"content": []map[string]string{
+				{"type": "text/plain", "value": fmt.Sprintf("Hi %s! Your code is: %s", username, verificationCode)},
+				{"type": "text/html", "value": html},
+			},
+		}
+
+		body, _ := json.Marshal(payload)
+		req, _ := http.NewRequestWithContext(ctx, "POST", "https://api.sendgrid.com/v3/mail/send", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+os.Getenv("SENDGRID_API_KEY"))
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{Timeout: 10 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode >= 300 {
+			return fmt.Errorf("sendgrid status %d", resp.StatusCode)
+		}
+		return nil
+	}
+
+	// SMTP fallback (theoretically works locally, or on hosts where 587 is open) ---
 	msg, err := e.buildVerificationMessage(toEmail, username, verificationCode, registrationDate)
 	if err != nil {
 		return err
@@ -82,7 +139,6 @@ func (e *EmailService) SendVerificationEmailCtx(ctx context.Context, toEmail, us
 	host, port := e.Host, e.Port
 	addr := net.JoinHostPort(host, port)
 
-	// Dial with context -> hard timeout
 	dialer := &net.Dialer{}
 	conn, err := dialer.DialContext(ctx, "tcp", addr)
 	if err != nil {
@@ -104,7 +160,7 @@ func (e *EmailService) SendVerificationEmailCtx(ctx context.Context, toEmail, us
 		}
 	}
 
-	// AUTH
+	// AUTH STUFF
 	if ok, _ := c.Extension("AUTH"); ok {
 		if err := c.Auth(smtp.PlainAuth("", e.Email, e.Password, host)); err != nil {
 			return err
@@ -127,6 +183,7 @@ func (e *EmailService) SendVerificationEmailCtx(ctx context.Context, toEmail, us
 	return w.Close()
 }
 
+// OG backup
 func (e *EmailService) SendVerificationEmail(toEmail string, username string, verificationCode string, registrationDate time.Time) error {
 	tmpl, fileErr := template.ParseFiles("/app/templates/verification_email.html")
 	if fileErr != nil {
