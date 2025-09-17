@@ -31,7 +31,7 @@ func (rs *RegistrationService) VerifyUser(ctx context.Context, email string, ver
 		return nil, "", fmt.Errorf("invalid verification code")
 	}
 
-	verifErr := rs.UserRepository.UpdateIsVerified(ctx, user.ID, user.IsVerified)
+	verifErr := rs.UserRepository.UpdateIsVerified(ctx, user.ID, true)
 	if verifErr != nil {
 		return nil, "", verifErr
 	}
@@ -76,14 +76,15 @@ func (rs *RegistrationService) Register(ctx context.Context, username string, em
 		return nil, fmt.Errorf("failed to create account: %w", createErr)
 	}
 
-	emailErr := rs.EmailService.SendVerificationEmail(user.Email, user.Username, user.VerificationCode, user.CreatedAt)
-
-	if emailErr != nil {
-		return nil, fmt.Errorf("failed to send email: %w", emailErr)
-	}
-
-	log.Print("Email has been sent!")
-	log.Print("User ID:", user.ID)
+	go func(u *users.User, code string) {
+		bg, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := rs.EmailService.SendVerificationEmailCtx(bg, u.Email, u.Username, code, u.CreatedAt); err != nil {
+			log.Printf("async email failed: %v", err)
+		} else {
+			log.Printf("verification email queued/sent to %s", u.Email)
+		}
+	}(user, code)
 
 	return user, nil
 }

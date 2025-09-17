@@ -68,7 +68,7 @@ func (uh *UserHandler) RegisterUser(writer http.ResponseWriter, request *http.Re
 		helper.WriteErr(writer, helper.ErrInvalidInput)
 		return
 	}
-	user, regErr := uh.RegistrationService.Register(context.Background(), reqBody.Username, reqBody.Email, reqBody.Password)
+	user, regErr := uh.RegistrationService.Register(request.Context(), reqBody.Username, reqBody.Email, reqBody.Password)
 	if regErr != nil {
 		helper.WriteErr(writer, helper.ErrInternal)
 		return
