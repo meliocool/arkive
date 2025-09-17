@@ -17,10 +17,9 @@ FROM alpine AS final
 
 WORKDIR /app
 
+RUN apk add --no-cache ca-certificates tzdata && update-ca-certificates
+
 COPY --from=build /app/app /app/app
-
-COPY .env .
-
 COPY ./templates ./templates
 
 RUN chmod +x /app/app
