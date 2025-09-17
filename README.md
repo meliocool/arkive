@@ -75,3 +75,6 @@ This project showcases core backend development skills including:
 * **Service Layer:** Contains the business logic, such as hashing passwords, generating JWTs, and interacting with external services.
 * **Repository Layer:** Abstracts the database interactions (e.g., saving user data, fetching photo metadata).
 * **IPFS Integration:** A dedicated service for communicating with the Pinata API to pin and retrieve files.
+
+## Deployment
+* **The API is live and deployed in a Droplet instance with DigitalOcean, however i dont have the money to buy a proper domain lol
