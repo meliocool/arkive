@@ -14,8 +14,8 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	if err := godotenv.Load(); err != nil {
-		return nil, fmt.Errorf("failed to load env: %w", err)
+	if _, err := os.Stat(".env"); err == nil {
+		_ = godotenv.Load()
 	}
 
 	DBUser := os.Getenv("POSTGRES_USER")
